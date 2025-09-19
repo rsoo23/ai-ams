@@ -5,3 +5,5 @@ pydantic
 sqlalchemy  # Optional: For ORM with RDS (if using PostgreSQL/MySQL)
 psycopg2-binary  # If RDS is PostgreSQL (for direct connections)
 uvicorn  # ASGI server for FastAPI
+python-multipart
+marker-pdf
