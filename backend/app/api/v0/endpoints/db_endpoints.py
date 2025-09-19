@@ -1,46 +1,66 @@
-import os
 import boto3
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from app.utils import validate_user_id, validate_filename
+from fastapi import APIRouter, UploadFile, HTTPException
+from app.config import AWS_REGION, S3_BUCKET_NAME
 
-from config import AWS_REGION, S3_BUCKET_NAME
-
+FILE_SIZE_LIMIT = 10 * 1024 * 1024  # 10MB
 
 router = APIRouter()
 s3_client = boto3.client('s3', region_name=AWS_REGION)
 
-@router.post("/store-s3")  # UNTESTED
-async def upload_to_s3(user_id: str, file: UploadFile = File(...)):
-    """
-    Upload a file to S3 after validation (PDF or image, max size 10MB).
-    Example frontend call:
-        POST /v0/db/store-s3
-        Form-data: file=@path/to/file.pdf
-        Response: {"filename": "file.pdf", "s3_bucket": "my-bucket", "s3_key": "documents/{userId}/file.pdf", "user_id": "{userId}"}
-    """
-    try:
-        if not user_id or user_id.__len__() == 0:
-            raise HTTPException(status_code=400, detail="Invalid user_id")
-        allowed_extensions = {".pdf", ".png", ".jpg", ".jpeg"}
-        file_extension = os.path.splitext(file.filename)[1].lower()
-        if file_extension not in allowed_extensions:
-            raise HTTPException(status_code=400, detail="Invalid file type. Only PDF, PNG and JPEG are allowed.")
+@router.post("/s3-store-file")  # UNTESTED
+async def upload_to_s3(user_id: str, file: UploadFile):
+	"""
+	Upload a file to S3 after validation (PDF or image, max size 10MB).
+	Example frontend call:
+		POST /v0/db/s3-store-file
+		Form-data: file=@path/to/file.pdf
+		Response: {"filename": "file.pdf", "s3_bucket": "my-bucket", "s3_key": "documents/{userId}/file.pdf", "user_id": "{userId}"}
+	"""
+	try:
+		validate_user_id(user_id)
+		validate_filename(file.filename)
 
-        file_content = await file.read()
-        if len(file_content) > 10 * 1024 * 1024:  # 10MB limit
-            raise HTTPException(status_code=400, detail="File size exceeds 10MB limit.")
+		file_content = await file.read()
+		if len(file_content) > FILE_SIZE_LIMIT:
+			raise HTTPException(status_code=400, detail="File size exceeds 10MB limit.")
 
-        s3_key = f"documents/{user_id}/{file.filename}"
-        s3_client.put_object(Bucket=S3_BUCKET_NAME, Key=s3_key, Body=file_content)
-        
-        return {
-            "filename": file.filename,
-            "s3_bucket": S3_BUCKET_NAME,
-            "s3_key": s3_key,
-            "user_id": user_id
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"S3 upload error: {str(e)}")
+		s3_key = f"documents/{user_id}/{file.filename}"
+		s3_client.put_object(Bucket=S3_BUCKET_NAME, Key=s3_key, Body=file_content)
+		
+		return {
+			"filename": file.filename,
+			"s3_bucket": S3_BUCKET_NAME,
+			"s3_key": s3_key,
+			"user_id": user_id
+		}
+	except Exception as e:
+		raise HTTPException(status_code=500, detail=f"S3 upload error: {str(e)}")
+
+@router.get("/s3-list-files")
+async def list_user_files(user_id: str):
+	"""
+	List all files for a given user in S3.
+	Example frontend call:
+		GET /v0/db/s3-list-files?user_id={userId}
+		Response: {"files": ["file1.pdf", "image1.png"]}
+	"""
+	try:
+		validate_user_id(user_id)
+
+		prefix = f"documents/{user_id}/"
+		response = s3_client.list_objects_v2(Bucket=S3_BUCKET_NAME, Prefix=prefix)
+		files = []
+		if 'Contents' in response:
+			for obj in response['Contents']:
+				filename = obj['Key'].replace(prefix, '', 1)
+				if filename:  # Exclude the prefix folder itself
+					files.append(filename)
+
+		return {"files": files}
+	except Exception as e:
+		raise HTTPException(status_code=500, detail=f"S3 list error: {str(e)}")
 
 @router.get("/test")  # TEST ENDPOINT
 async def test():
-    return {"data": ["data0", "data1", "data2"]}
+	return {"data": ["data0", "data1", "data2"]}
