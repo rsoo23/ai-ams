@@ -33,7 +33,6 @@ async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depen
 		llm_response = await identify_transactions(PromptSchema(message=extraction_details["data"]), accounts)
 
 		return {
-			"filename": upload_details["filename"],
 			"s3_key": upload_details["s3_key"],
 			"data": llm_response["response"],
 		}
@@ -61,7 +60,6 @@ async def upload_to_s3(user_id: str, file_name: str, file_content: bytes):
 		s3_client.put_object(Bucket=S3_BUCKET_NAME, Key=s3_key, Body=file_content)
 		
 		return {
-			"filename": file_name,
 			"s3_key": s3_key,
 			"user_id": user_id
 		}
