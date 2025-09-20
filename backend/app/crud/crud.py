@@ -1,6 +1,6 @@
+from typing import Optional
 from sqlalchemy.orm import Session
-from models import Account, JournalEntry, JournalEntryLine
-from typing import List, Optional
+from app.models.models import Account, JournalEntry, JournalEntryLine
 
 class AccountCRUD:
     @staticmethod

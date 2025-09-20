@@ -1,9 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, ForeignKey, Text, Boolean
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-from datetime import datetime
 import enum
-from pydantic import BaseModel
+from datetime import datetime
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, ForeignKey, Text, Boolean
 
 Base = declarative_base()
 
@@ -67,9 +66,6 @@ class JournalEntryLine(Base):
     # Relationships
     journal_entry = relationship("JournalEntry", back_populates="lines")
     account = relationship("Account", back_populates="journal_lines")
-
-class PromptBody(BaseModel):
-	message: str
 
 
 # General Ledger Models
