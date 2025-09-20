@@ -5,23 +5,19 @@ import tempfile
 import pytesseract
 import pymupdf4llm
 from PIL import Image
-from fastapi import APIRouter, UploadFile, HTTPException
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 
 @router.post("/extract-text")
-async def extract_text_from_pdf(file: UploadFile):
+async def extract_text_from_pdf(file_content: bytes):
 	try:
-		file_content = await file.read()
 		if not file_content:
 			raise HTTPException(status_code=400, detail="Empty file uploaded.")
 
 		with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tf:
 			# stream directly instead of file.read()
-			content = await file.read()
-			if not content:
-				raise HTTPException(status_code=400, detail="Uploaded file is empty")
-			tf.write(content)
+			tf.write(file_content)
 			tf.flush()
 			tf_path = tf.name
 

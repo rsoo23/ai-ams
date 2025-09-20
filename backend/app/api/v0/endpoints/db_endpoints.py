@@ -22,9 +22,13 @@ async def list_accounts(db: Session = Depends(get_db)):
 @router.post("/upload-and-process")
 async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depends(get_db)):
 	try:
-		upload_details = await upload_to_s3(user_id, file)
-		file.file.seek(0)
-		extraction_details = await extract_text_from_pdf(file)
+		file_name = file.filename
+		file_content = await file.read()
+		if not file_content:
+			raise HTTPException(status_code=400, detail="Empty file uploaded.")
+
+		upload_details = await upload_to_s3(user_id, file_name, file_content)
+		extraction_details = await extract_text_from_pdf(file_content)
 		accounts = await list_accounts(db)
 		llm_response = await identify_transactions(PromptSchema(message=extraction_details["data"]), accounts)
 
@@ -38,7 +42,7 @@ async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depen
 		raise HTTPException(status_code=500, detail=f"Error uploading/processing file: {str(e)}")
 
 @router.post("/s3-store-file")
-async def upload_to_s3(user_id: str, file: UploadFile):
+async def upload_to_s3(user_id: str, file_name: str, file_content: bytes):
 	"""
 	Upload a file to S3 after validation (PDF or image, max size 10MB).
 	Example frontend call:
@@ -48,19 +52,16 @@ async def upload_to_s3(user_id: str, file: UploadFile):
 	"""
 	try:
 		validate_user_id(user_id)
-		validate_filename(file.filename)
+		validate_filename(file_name)
 
-		file_content = await file.read()
-		if not file_content:
-			raise HTTPException(status_code=400, detail="Empty file uploaded.")
 		if len(file_content) > FILE_SIZE_LIMIT:
 			raise HTTPException(status_code=400, detail="File size exceeds 10MB limit.")
 
-		s3_key = f"documents/{user_id}/{file.filename}"
+		s3_key = f"documents/{user_id}/{file_name}"
 		s3_client.put_object(Bucket=S3_BUCKET_NAME, Key=s3_key, Body=file_content)
 		
 		return {
-			"filename": file.filename,
+			"filename": file_name,
 			"s3_key": s3_key,
 			"user_id": user_id
 		}
