@@ -50,6 +50,8 @@ async def upload_to_s3(user_id: str, file: UploadFile):
 		validate_filename(file.filename)
 
 		file_content = await file.read()
+		if not file_content:
+			raise HTTPException(status_code=400, detail="Empty file uploaded.")
 		if len(file_content) > FILE_SIZE_LIMIT:
 			raise HTTPException(status_code=400, detail="File size exceeds 10MB limit.")
 

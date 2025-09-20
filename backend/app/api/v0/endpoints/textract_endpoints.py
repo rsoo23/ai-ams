@@ -13,6 +13,9 @@ router = APIRouter()
 async def extract_text_from_pdf(file: UploadFile):
 	try:
 		file_content = await file.read()
+		if not file_content:
+			raise HTTPException(status_code=400, detail="Empty file uploaded.")
+
 		with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tf:
 			tf.write(file_content)
 			tf_path = tf.name
