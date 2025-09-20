@@ -1,0 +1,19 @@
+# AWS folder
+aws/
+
+# Python cache
+__pycache__/
+
+# Environment files
+.env
+
+# Archives
+*.zip
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
