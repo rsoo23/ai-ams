@@ -1,5 +1,5 @@
 import boto3
-from backend.app.models.models import PromptBody
+from app.models.models import PromptBody
 from .bedrock_endpoints import identify_transactions
 from .textract_endpoints import extract_text_from_pdf
 from fastapi import APIRouter, UploadFile, HTTPException
@@ -14,9 +14,9 @@ s3_client = boto3.client('s3', region_name=AWS_REGION)
 @router.post("/upload-and-process")
 async def upload_and_process(user_id: str, file: UploadFile):
 	try:
-		upload_details = upload_to_s3(user_id, file)
-		extraction_details = extract_text_from_pdf(file)
-		llm_response = identify_transactions(PromptBody(message=extraction_details["data"]))
+		upload_details = await upload_to_s3(user_id, file)
+		extraction_details = await extract_text_from_pdf(file)
+		llm_response = await identify_transactions(PromptBody(message=extraction_details["data"]))
 
 		return {
 			"filename": upload_details["filename"],

@@ -1,6 +1,6 @@
 import boto3
+from app.models.models import PromptBody
 from fastapi import APIRouter, HTTPException
-from backend.app.models.models import PromptBody
 
 # Note: this AWS region is not the same as the one set in the app.config
 AWS_REGION = 'us-east-1'
@@ -23,16 +23,16 @@ a JSON array of objects, each object following the below structure:\n\
 The user will send a message containing only the markdown generated from OCR. \
 If you can't identify any transactions, return an empty JSON object. \
 DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTED."
-	return send_prompt(system_prompt, prompt.message)
+	return await send_prompt(system_prompt, prompt.message)
 
 @router.post("/test")  # Credit to Lewis
 async def test(prompt: PromptBody):
 	system_prompt = "You're the type of person always steer the conversion towards \
 pinapple on pizza. You always start each message with 'wassup big boiyo'. You always \
 end each message with 'This is a test endpoint.'"
-	return send_prompt(system_prompt, prompt.message, 0.5, 0.9)
+	return await send_prompt(system_prompt, prompt.message, 0.5, 0.9)
 
-async def send_prompt(system_prompt: str, user_prompt: str, temperature: float = 0.3, top_p: float = 0.4, tokens: int = 4096):
+async def send_prompt(system_prompt: str, user_prompt: str, temperature: float = 0.3, top_p: float = 0.4, tokens: int = 2048):
 	try:
 		response = bedrock_client.converse(
 			modelId=MODEL_ID,
