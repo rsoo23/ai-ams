@@ -1,9 +1,12 @@
 import boto3
+from app.database import get_db
+from sqlalchemy.orm import Session
+from app.crud.crud import get_accounts
 from app.models.models import PromptBody
 from .bedrock_endpoints import identify_transactions
 from .textract_endpoints import extract_text_from_pdf
-from fastapi import APIRouter, UploadFile, HTTPException
 from app.utils import validate_user_id, validate_filename
+from fastapi import APIRouter, UploadFile, HTTPException, Depends
 from app.config import AWS_REGION, S3_BUCKET_NAME
 
 FILE_SIZE_LIMIT = 10 * 1024 * 1024  # 10MB
@@ -11,12 +14,18 @@ FILE_SIZE_LIMIT = 10 * 1024 * 1024  # 10MB
 router = APIRouter()
 s3_client = boto3.client('s3', region_name=AWS_REGION)
 
+@router.get("/accounts")
+async def list_accounts(db: Session = Depends(get_db)):
+	accounts = get_accounts(db)
+	return accounts
+
 @router.post("/upload-and-process")
-async def upload_and_process(user_id: str, file: UploadFile):
+async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depends(get_db)):
 	try:
 		upload_details = await upload_to_s3(user_id, file)
 		extraction_details = await extract_text_from_pdf(file)
-		llm_response = await identify_transactions(PromptBody(message=extraction_details["data"]))
+		accounts = get_accounts(db)
+		llm_response = await identify_transactions(PromptBody(message=extraction_details["data"]), accounts)
 
 		return {
 			"filename": upload_details["filename"],
