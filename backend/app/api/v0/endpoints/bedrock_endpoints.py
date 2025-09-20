@@ -1,3 +1,4 @@
+import json
 import boto3
 from app.models.models import PromptBody
 from fastapi import APIRouter, HTTPException
@@ -40,7 +41,14 @@ async def send_prompt(system_prompt: str, user_prompt: str, temperature: float =
 			system=[{"text": system_prompt}],
 			inferenceConfig={"maxTokens": tokens, "temperature": temperature, "topP": top_p}
 		)
-		return {"response": response["output"]["message"]["content"][0]}
+		response_str = response["output"]["message"]["content"][0]["text"].strip()
+
+		try:
+			json_data = json.loads(response_str) # If it's valid JSON, pretty print it
+			return {"response": json.dumps(json_data)}
+		except json.JSONDecodeError:
+			cleaned_text = ' '.join(response_str.split()) # If not JSON, just clean up extra whitespace
+			return {"response": cleaned_text}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=f"Error with bedrock-runtime ({MODEL_ID}). Reason: {e}")
 
