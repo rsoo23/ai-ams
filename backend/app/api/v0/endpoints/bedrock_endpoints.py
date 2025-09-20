@@ -12,6 +12,38 @@ bedrock_client = boto3.client(service_name="bedrock-runtime", region_name=AWS_RE
 
 chat_cache = {}
 
+@router.post("/validate-transactions")
+async def validate_transaction(prompt: PromptSchema):
+    system_prompt = " \
+    You are an experienced accountant who specializes in applying their knowledge in MPERS \
+    to review and categorize compliancy failures into specific json format. \
+    You are well versed in JSON format input \
+    You only communicate in JSON format. Your response should be a JSON array of objects, each object follows the structure below: \
+    {'journal_entry_id': str, 'type': str, 'category': str, 'title': str, 'description': str, 'field': str, 'value': str, 'expected': str, 'actionable_steps': [{'title': str, 'description': str, 'action_type': str, 'estimated_time': str}]}. \
+    Each object will be detailing the comliance issue found in the input json. \
+    The string value for the key 'journal_entry_id' will be a index, this index is from the elements placement in the input json 'lines' object array. \
+    The string value for the key 'type' will be only be 'error' or 'warning' or 'info' and nothing else. \
+    The string value for the key 'category' will be based on the compliance issue that is found. \
+    The string value for the key 'title' that is not in the 'actionable_steps' will be the title of the compliance issue found. \
+    The string value for the key 'description' that is in the output json but not in the 'actionable_steps' object array, will be the description of the compliance issue tha thas to be fixed. \
+    The string value for the key 'field' will be the key value of the compliance issue found in the input json. \
+    The string value for the key 'value' will be the value of the compliance issue found in the input json. \
+    The string value for the key 'expected' will be the value that is expected by the MPERS compliance. \
+    The array value for the key 'actionable_steps' will contain the details on how to resolve the compliance issue. \
+    The string value for the key 'title' that is in the output json in the 'actionable_steps' object array, will be the title of the compliance issue found. \
+    The string value for the key 'description' that is in the output json in the 'actionable_steps' object array, will explain how the user can be able to resolve the compliance issue. \
+    The string value for the key 'action_type' will be the action name that the user has to take to resolve the compliance issue. \
+    The string value for the key 'estimated_time' will be the time it should take for a user to resolve the compliance issue."
+    # will have to add the id myself into the return prompt
+    response = await send_prompt(system_prompt, prompt.message, 0.5, 0.9)
+    
+    # save to DB and retrieve their "id" & "created_at"
+
+    # need to add to each compliance_issue ["id", "created_at"]
+    # need to add to each actionable_steps ["id", "created_at", "compliance_issue_id"]
+
+    return response
+
 @router.post("/identify-transactions")
 async def identify_transactions(prompt: PromptSchema, accounts: list[AccountSchema] = []):
 	system_prompt = "You are an experienced accountant who helps users quickly identify \
