@@ -1,7 +1,9 @@
 import boto3
-from textract_endpoints import extract_text_from_pdf
-from app.utils import validate_user_id, validate_filename
+from backend.app.models.models import PromptBody
+from .bedrock_endpoints import identify_transactions
+from .textract_endpoints import extract_text_from_pdf
 from fastapi import APIRouter, UploadFile, HTTPException
+from app.utils import validate_user_id, validate_filename
 from app.config import AWS_REGION, S3_BUCKET_NAME
 
 FILE_SIZE_LIMIT = 10 * 1024 * 1024  # 10MB
@@ -14,12 +16,13 @@ async def upload_and_process(user_id: str, file: UploadFile):
 	try:
 		upload_details = upload_to_s3(user_id, file)
 		extraction_details = extract_text_from_pdf(file)
+		llm_response = identify_transactions(PromptBody(message=extraction_details["data"]))
 
 		return {
 			"filename": upload_details["filename"],
 			"s3_bucket": upload_details["s3_bucket"],
 			"s3_key": upload_details["s3_key"],
-			"data": extraction_details["data"],
+			"data": llm_response["response"],
 			"user_id": user_id
 		}
 
