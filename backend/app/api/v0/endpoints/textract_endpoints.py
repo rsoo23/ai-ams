@@ -17,7 +17,12 @@ async def extract_text_from_pdf(file: UploadFile):
 			raise HTTPException(status_code=400, detail="Empty file uploaded.")
 
 		with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tf:
-			tf.write(file_content)
+			# stream directly instead of file.read()
+			content = await file.read()
+			if not content:
+				raise HTTPException(status_code=400, detail="Uploaded file is empty")
+			tf.write(content)
+			tf.flush()
 			tf_path = tf.name
 
 		doc_content = pymupdf4llm.to_markdown(tf_path)
@@ -25,8 +30,7 @@ async def extract_text_from_pdf(file: UploadFile):
 			doc = pymupdf.open(tf_path)
 			extracted_text = []
 			for page in doc:
-				image_list = page.get_images(full=True)
-				for img_index, img in enumerate(image_list):
+				for img_index, img in enumerate(page.get_images(full=True)):
 					xref = img[0]
 					base_image = doc.extract_image(xref)
 					image_bytes = base_image["image"]
@@ -34,14 +38,15 @@ async def extract_text_from_pdf(file: UploadFile):
 					image = Image.open(io.BytesIO(image_bytes))
 					text = pytesseract.image_to_string(image)
 					if text.strip():
-						extracted_text.append(f"### Page {page.number + 1}, Image {img_index + 1}\n\n{text.strip()}\n")
+						extracted_text.append(
+							f"### Page {page.number + 1}, Image {img_index + 1}\n\n{text.strip()}\n"
+						)
 			doc.close()
-			doc_content = "\n".join(extracted_text) if extracted_text else "" 
-		os.unlink(tf_path)
+			doc_content = "\n".join(extracted_text) if extracted_text else ""
 
-		return {
-			"data": doc_content.strip()
-		}
+		os.unlink(tf_path)
+		return {"data": doc_content.strip()}
+
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=f"Error during text extraction: {str(e)}")
 
