@@ -29,10 +29,8 @@ async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depen
 
 		return {
 			"filename": upload_details["filename"],
-			"s3_bucket": upload_details["s3_bucket"],
 			"s3_key": upload_details["s3_key"],
 			"data": llm_response["response"],
-			"user_id": user_id
 		}
 
 	except Exception as e:
@@ -60,7 +58,6 @@ async def upload_to_s3(user_id: str, file: UploadFile):
 		
 		return {
 			"filename": file.filename,
-			"s3_bucket": S3_BUCKET_NAME,
 			"s3_key": s3_key,
 			"user_id": user_id
 		}
