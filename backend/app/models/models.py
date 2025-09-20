@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, ForeignKey, Text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-from datetime import datetime, date
+from pydantic import BaseModel
 from typing import Optional, List
+from datetime import datetime, date
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, ForeignKey, Text
 
 Base = declarative_base()
 
@@ -45,5 +46,5 @@ class JournalEntryLine(Base):
     journal_entry = relationship("JournalEntry", back_populates="lines")
     account = relationship("Account", back_populates="journal_lines")
 
-class PromptBody:
+class PromptBody(BaseModel):
 	message: str
