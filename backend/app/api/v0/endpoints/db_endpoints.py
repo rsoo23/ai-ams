@@ -23,6 +23,7 @@ async def list_accounts(db: Session = Depends(get_db)):
 async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depends(get_db)):
 	try:
 		upload_details = await upload_to_s3(user_id, file)
+		file.file.seek(0)
 		extraction_details = await extract_text_from_pdf(file)
 		accounts = await list_accounts(db)
 		llm_response = await identify_transactions(PromptSchema(message=extraction_details["data"]), accounts)
