@@ -1,4 +1,5 @@
 import boto3
+from textract_endpoints import extract_text_from_pdf
 from app.utils import validate_user_id, validate_filename
 from fastapi import APIRouter, UploadFile, HTTPException
 from app.config import AWS_REGION, S3_BUCKET_NAME
@@ -8,7 +9,24 @@ FILE_SIZE_LIMIT = 10 * 1024 * 1024  # 10MB
 router = APIRouter()
 s3_client = boto3.client('s3', region_name=AWS_REGION)
 
-@router.post("/s3-store-file")  # UNTESTED
+@router.post("/upload-and-process")
+async def upload_and_process(user_id: str, file: UploadFile):
+	try:
+		upload_details = upload_to_s3(user_id, file)
+		extraction_details = extract_text_from_pdf(file)
+
+		return {
+			"filename": upload_details["filename"],
+			"s3_bucket": upload_details["s3_bucket"],
+			"s3_key": upload_details["s3_key"],
+			"data": extraction_details["data"],
+			"user_id": user_id
+		}
+
+	except Exception as e:
+		raise HTTPException(status_code=500, detail=f"Error uploading/processing file: {str(e)}")
+
+@router.post("/s3-store-file")
 async def upload_to_s3(user_id: str, file: UploadFile):
 	"""
 	Upload a file to S3 after validation (PDF or image, max size 10MB).
@@ -35,7 +53,7 @@ async def upload_to_s3(user_id: str, file: UploadFile):
 			"user_id": user_id
 		}
 	except Exception as e:
-		raise HTTPException(status_code=500, detail=f"S3 upload error: {str(e)}")
+		raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
 
 @router.get("/s3-list-files")
 async def list_user_files(user_id: str):
@@ -59,7 +77,7 @@ async def list_user_files(user_id: str):
 
 		return {"files": files}
 	except Exception as e:
-		raise HTTPException(status_code=500, detail=f"S3 list error: {str(e)}")
+		raise HTTPException(status_code=500, detail=f"Error listing files: {str(e)}")
 
 @router.get("/test")  # TEST ENDPOINT
 async def test():
