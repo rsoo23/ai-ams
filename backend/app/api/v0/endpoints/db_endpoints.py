@@ -2,10 +2,10 @@ import boto3
 from app.database import get_db
 from sqlalchemy.orm import Session
 from app.crud.crud import AccountCRUD
-from app.models.schemas import PromptSchema
 from .bedrock_endpoints import identify_transactions
 from .textract_endpoints import extract_text_from_pdf
 from app.utils import validate_user_id, validate_filename
+from app.models.schemas import AccountSchema, PromptSchema
 from fastapi import APIRouter, UploadFile, HTTPException, Depends
 from app.config import AWS_REGION, S3_BUCKET_NAME
 
@@ -14,7 +14,7 @@ FILE_SIZE_LIMIT = 10 * 1024 * 1024  # 10MB
 router = APIRouter()
 s3_client = boto3.client('s3', region_name=AWS_REGION)
 
-@router.get("/accounts")
+@router.get("/accounts", response_model=list[AccountSchema])
 async def list_accounts(db: Session = Depends(get_db)):
 	accounts = AccountCRUD.get_accounts(db)
 	return accounts
