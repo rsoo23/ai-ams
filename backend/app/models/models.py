@@ -44,3 +44,6 @@ class JournalEntryLine(Base):
     # Relationships
     journal_entry = relationship("JournalEntry", back_populates="lines")
     account = relationship("Account", back_populates="journal_lines")
+
+class PromptBody:
+	message: str

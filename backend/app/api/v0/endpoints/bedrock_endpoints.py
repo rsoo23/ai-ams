@@ -1,6 +1,6 @@
-from email import message
 import boto3
 from fastapi import APIRouter, HTTPException
+from backend.app.models.models import PromptBody
 
 # Note: this AWS region is not the same as the one set in the app.config
 AWS_REGION = 'us-east-1'
@@ -11,14 +11,12 @@ bedrock_client = boto3.client(service_name="bedrock-runtime", region_name=AWS_RE
 
 chat_cache = {}
 
-class PromptBody:
-	message: str
-
 @router.post("/identify-transactions")
 async def identify_transactions(prompt: PromptBody):
 	system_prompt = "You are an experienced accountant who helps users quickly identify \
 and categorize transactions, given the markdown representation of invoices or receipts. \
 You are a master of identifying debits and credits through messy markdown generated from OCR results of pdf scans. \
+You are an expert at analysing and explaining transactions to laymen who ask for exaplanations (description). \
 You only communicate in JSON format. Your response should be \
 a JSON array of objects, each object following the below structure:\n\
 {'debit': float, 'credit': float, 'description': str}\n\n\
