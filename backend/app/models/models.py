@@ -55,7 +55,7 @@ class JournalEntryLine(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     journal_entry_id = Column(Integer, ForeignKey("journal_entries.id"), nullable=False)
-    account_id = Column(Integer, ForeignKey("accounts.code"), nullable=False)
+    account_code = Column(Integer, ForeignKey("accounts.code"), nullable=False)
     debit = Column(Float, default=0.0)
     credit = Column(Float, default=0.0)
     description = Column(Text, nullable=True)

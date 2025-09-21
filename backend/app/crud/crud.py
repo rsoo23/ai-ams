@@ -29,11 +29,11 @@ class JournalEntryCRUD:
         return entry
     
     @staticmethod
-    def add_journal_line(db: Session, journal_entry_id: int, account_id: int, 
+    def add_journal_line(db: Session, journal_entry_id: int, account_code: int, 
                         debit: float = 0.0, credit: float = 0.0, description: str = None):
         line = JournalEntryLine(
             journal_entry_id=journal_entry_id,
-            account_id=account_id,
+            account_code=account_code,
             debit=debit,
             credit=credit,
             description=description
