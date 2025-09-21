@@ -1,14 +1,14 @@
 import json
 import boto3
 from app.database import get_db
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi.responses import StreamingResponse
 from .bedrock_endpoints import identify_transactions
 from .textract_endpoints import extract_text_from_pdf
 from app.crud.crud import AccountCRUD, JournalEntryCRUD
 from app.utils import validate_user_id, validate_filename
-from app.models.schemas import AccountSchema, PromptSchema, JournalEntrySchema
 from fastapi import APIRouter, UploadFile, HTTPException, Depends
+from app.models.schemas import AccountSchema, PromptSchema, JournalEntrySchema, JournalEntryLineSchema
 from app.config import AWS_REGION, S3_BUCKET_NAME
 
 FILE_SIZE_LIMIT = 10 * 1024 * 1024  # 10MB
@@ -53,6 +53,30 @@ async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depen
 
 
 ### RDS JOURNAL ENTRY ENDPOINTS ###
+
+@router.get("/journal-entry")
+async def get_journal_entries(db: Session = Depends(get_db)):
+	try:
+		entries = db.query(JournalEntryCRUD).options(joinedload(JournalEntryCRUD.lines)).all()
+		return [
+			JournalEntrySchema(
+				date=entry.date.isoformat(),
+				reference=entry.reference,
+				description=entry.description,
+				lines=[
+					JournalEntryLineSchema(
+						account_id=str(line.account_id),
+						debit=line.debit,
+						credit=line.credit,
+						description=line.description,
+					)
+					for line in entry.lines
+				]
+			)
+			for entry in entries
+		]
+	except Exception as e:
+		raise HTTPException(status_code=500, detail=f"Error fetching journal entries: {str(e)}")
 
 @router.post("/journal-entry")
 async def submit_journal_entry(journal_entry: JournalEntrySchema, db: Session = Depends(get_db)):
