@@ -2,6 +2,7 @@ import boto3
 from app.database import get_db
 from sqlalchemy.orm import Session
 from app.crud.crud import AccountCRUD
+from fastapi.responses import StreamingResponse
 from .bedrock_endpoints import identify_transactions
 from .textract_endpoints import extract_text_from_pdf
 from app.utils import validate_user_id, validate_filename
@@ -40,12 +41,17 @@ async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depen
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=f"Error uploading/processing file: {str(e)}")
 
-@router.post("/s3-store-file")
+@router.get("/s3")
+async def get_s3_object(s3_key: str):
+	s3_response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=s3_key)
+	return StreamingResponse(s3_response['Body'], media_type='application/pdf', headers={"Content-Disposition": f"inline; filename={s3_key.split('/')[-1]}"})
+
+@router.post("/s3")
 async def upload_to_s3(user_id: str, file_name: str, file_content: bytes):
 	"""
 	Upload a file to S3 after validation (PDF or image, max size 10MB).
 	Example frontend call:
-		POST /v0/db/s3-store-file
+		POST /v0/db/s3
 		Form-data: file=@path/to/file.pdf
 		Response: {"filename": "file.pdf", "s3_bucket": "my-bucket", "s3_key": "documents/{userId}/file.pdf", "user_id": "{userId}"}
 	"""
@@ -66,7 +72,7 @@ async def upload_to_s3(user_id: str, file_name: str, file_content: bytes):
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
 
-@router.get("/s3-list-files")
+@router.get("/s3-list")
 async def list_user_files(user_id: str):
 	"""
 	List all files for a given user in S3.
