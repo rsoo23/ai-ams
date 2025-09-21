@@ -62,6 +62,7 @@ DO NOT HALLUCINATE IF NO COMPLIANCE ERRORS ARE FOUND. DO NOT RESPOND IN A NON-JS
 
 @router.post("/identify-transactions")
 async def identify_transactions(prompt: PromptSchema, accounts: list[AccountSchema] = []):
+	accounts_str = ",".join(f"{acc.code}:{acc.name}({acc.type}))" for acc in accounts)
 	system_prompt = "STRICTLY FOLLOW THESE DIRECTIVES:\n\
 You are an experienced accountant who helps users thoroughly identify \
 and categorize transactions, given the markdown representation of invoices or receipts. \
@@ -69,8 +70,13 @@ You are a master of identifying debits and credits through messy markdown genera
 You are an expert at analysing and explaining transactions to laymen who ask for exaplanations (description). \
 You are the best in the world at cross-checking and identifying correct Account Types and Codes for transactions.\
 You only communicate in JSON format. Your response should be a JSON array of objects, each object following the below structure:\n\
-{'date': 'Date inferred from the document IN ISO FORMAT','reference': 'Invoice reference or number inferred from the document','description': 'LLM generated description of the document','lines': [{'account_code': 'Relevant account code','debit': 100.00,'credit': 0.00,'description': 'LLM generated line description'}, ...]}\n\n\
-Below are the accounts found in our company database, which you can use for categorization:\n" + f"{accounts}" + "\n\n\
+{'date': 'Date inferred from the document IN ISO FORMAT',\
+'reference': 'Invoice reference or number inferred from the document',\
+'description': 'LLM generated description of the document',\
+'lines': [{'account_code': 'Relevant account code according to the available list here (" + accounts_str + ")',\
+'debit': 'float amount derived from the relavant transaction',\
+'credit': 'float amount derived from the relavant transaction',\
+'description': 'LLM generated transaction description'}, ...]}\n\
 The user will send a message containing only the markdown generated from OCR. \
 If you can't identify any transactions, return an empty JSON object. \
 DO NOT HALLUCINATE. DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTED."
