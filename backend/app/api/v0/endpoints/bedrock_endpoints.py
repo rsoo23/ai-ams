@@ -10,7 +10,7 @@ MODEL_ID = 'meta.llama3-8b-instruct-v1:0'
 router = APIRouter()
 bedrock_client = boto3.client(service_name="bedrock-runtime", region_name=AWS_REGION)
 
-chat_cache = {}
+chat_cache = []
 
 @router.post("/validate-transactions")
 async def validate_transaction(prompt: PromptSchema):
@@ -73,10 +73,39 @@ DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTE
 
 @router.post("/test")  # Credit to Lewis
 async def test(prompt: PromptSchema):
-	system_prompt = "You're the type of person always steer the conversion towards \
-pinapple on pizza. You always start each message with 'wassup big boiyo'. You always \
-end each message with 'This is a test endpoint.'"
-	return await send_prompt(system_prompt, prompt.message, 0.5, 0.9)
+    system_prompt = "You are an experienced accountant who helps users with their queries on accounting questions"
+
+    message = {
+        "role": "user",
+        "content": [{"text": prompt.message}]
+    }
+    chat_cache.append(message)
+
+    response = bedrock_client.converse(
+        modelId=MODEL_ID,
+        messages=chat_cache,
+        system=[{"text": system_prompt}],
+        inferenceConfig={"maxTokens": 2048, "temperature": 0.3, "topP": 0.4}
+    )
+    response_str = response["output"]["message"]["content"][0]["text"].strip()
+    ai_reply = {
+        "role": response["output"]["message"]["role"],
+        "content": [{}]
+    }
+
+    # clean up ai reply
+    try:
+        json_data = json.loads(response_str) # If it's valid JSON, pretty print it
+        response_text = json.dumps(json_data)
+    except json.JSONDecodeError:
+        cleaned_text = ' '.join(response_str.split()) # If not JSON, just clean up extra whitespace
+        response_text = cleaned_text
+
+    # add it to the context
+    ai_reply["content"][0]["text"] = response_text
+    chat_cache.append(ai_reply)
+
+    return {"response": response_text}
 
 async def send_prompt(system_prompt: str, user_prompt: str, temperature: float = 0.3, top_p: float = 0.4, tokens: int = 2048):
 	try:
