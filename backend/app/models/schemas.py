@@ -1,3 +1,4 @@
+from datetime import date
 from pydantic import BaseModel
 
 class PromptSchema(BaseModel):
@@ -15,7 +16,7 @@ class JournalEntryLineSchema(BaseModel):
 	description: str
 
 class JournalEntrySchema(BaseModel):
-	date: str
+	date: date
 	reference: str
 	description: str
 	lines: list[JournalEntryLineSchema]
