@@ -10,15 +10,21 @@ MODEL_ID = 'meta.llama3-8b-instruct-v1:0'
 router = APIRouter()
 bedrock_client = boto3.client(service_name="bedrock-runtime", region_name=AWS_REGION)
 
-chat_cache = []
+chat_cache = []  # simple in-memory cache for chat history
+
+def estimate_tokens(messages: list[dict]):
+	"""
+	Rough estimate of token usage based on message text length.
+	Uses ~4 chars per token heuristic.
+	"""
+	total_chars = sum(len(msg["content"][0]["text"]) for msg in messages)
+	return total_chars // 4
 
 @router.post("/validate-transactions")
 async def validate_transaction(prompt: PromptSchema):
     system_prompt = "\
 You are an experienced accountant who specializes in applying their knowledge in MPERS\
 to review and categorize compliancy failures into specific json format.\
-You are well versed in JSON formatted input.\
-You only communicate in JSON format.\
 Your response should be a JSON array of objects, each object follows the structure below:\n{\
 'journal_entry_id': 'index of the compliance issue found in the input json',\
 'type': 'will only be the words \'error\', \'warning\', or \'info\' based on the severity of the compliance issue found',\
@@ -32,7 +38,8 @@ Your response should be a JSON array of objects, each object follows the structu
 'title': 'title of the actionable steps that can be taken to resolve the compliance issue',\
 'description': 'explaining the step to resolve the compliance issue',\
 'action_type': 'action name that the user has to take to resolve the compliance issue',\
-'estimated_time': 'estimated time for someone to resolve the compliance issue'}]}."
+'estimated_time': 'estimated time for someone to resolve the compliance issue'}]}. \
+DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTED."
 
     # will have to add the id myself into the return prompt
     response = await send_prompt(system_prompt, prompt.message, 0.5, 0.9)
@@ -71,87 +78,54 @@ If you can't identify any transactions, return an empty JSON object. \
 DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTED."
 	return await send_prompt(system_prompt, prompt.message)
 
-@router.post("/test")  # Credit to Lewis
-async def test(prompt: PromptSchema):
-    system_prompt = "You are an experienced CFO of 20 years with deep expertise in financial management and accountancy \
+@router.post("/chat")  # Credit to Lewis
+async def chat(prompt: PromptSchema):
+	system_prompt = "You are an experienced CFO of 20 years with deep expertise in financial management and accountancy \
 who specializes in applying their knowledge in MPERS and providing strategic financial insights to improve business \
 operations and compliance. As a CFO, you understand the broader business implications of accounting compliance issues\
 and can recommend actionable steps that align with business objectives while maintaining regulatory compliance.\
 You have deep knowledge of how MPERS standards impact financial reporting, cash flow management,\
-and strategic decision-making processes."
+and strategic decision-making processes. DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTED."
 
-    message = {
-        "role": "user",
-        "content": [{"text": prompt.message}]
-    }
-    chat_cache.append(message)
+	result = await send_prompt(system_prompt, prompt.message, chat_history=chat_cache)
+	chat_cache.append({"role": "user", "content": [{"text": prompt.message}]}) # Maintain chat history
+	chat_cache.append({"role": "assistant", "content": [{"text": result["response"]}]})
 
-    response = bedrock_client.converse(
-        modelId=MODEL_ID,
-        messages=chat_cache,
-        system=[{"text": system_prompt}],
-        inferenceConfig={"maxTokens": 2048, "temperature": 0.3, "topP": 0.4}
-    )
-    response_str = response["output"]["message"]["content"][0]["text"].strip()
-    ai_reply = {
-        "role": response["output"]["message"]["role"],
-        "content": [{}]
-    }
+	return result
 
-    # clean up ai reply
-    try:
-        json_data = json.loads(response_str) # If it's valid JSON, pretty print it
-        response_text = json.dumps(json_data)
-    except json.JSONDecodeError:
-        cleaned_text = ' '.join(response_str.split()) # If not JSON, just clean up extra whitespace
-        response_text = cleaned_text
+async def send_prompt(
+		system_prompt: str,
+		user_prompt: str,
+		temperature: float = 0.3,
+		top_p: float = 0.4,
+		tokens: int = 2048,
+		chat_history: list | None = None
+	):
+	messages = chat_history[:] if chat_history else []
+	messages.append({"role": "user", "content": [{"text": user_prompt}]})
 
-    # add it to the context
-    ai_reply["content"][0]["text"] = response_text
-    chat_cache.append(ai_reply)
+	# prune oldest messages until under budget
+	while estimate_tokens(messages) > tokens:
+		if len(messages) > 1:  # don't drop the latest prompt
+			messages.pop(0)
+		else:
+			break
 
-    return {"response": response_text}
-
-async def send_prompt(system_prompt: str, user_prompt: str, temperature: float = 0.3, top_p: float = 0.4, tokens: int = 2048):
 	try:
 		response = bedrock_client.converse(
 			modelId=MODEL_ID,
-			messages=[{"role": "user", "content": [{"text": user_prompt}]}],
+			messages=messages,
 			system=[{"text": system_prompt}],
 			inferenceConfig={"maxTokens": tokens, "temperature": temperature, "topP": top_p}
 		)
 		response_str = response["output"]["message"]["content"][0]["text"].strip()
 
 		try:
-			json_data = json.loads(response_str) # If it's valid JSON, pretty print it
-			return {"response": json.dumps(json_data)}
+			json_data = json.loads(response_str)
+			response_text = json.dumps(json_data)
 		except json.JSONDecodeError:
-			cleaned_text = ' '.join(response_str.split()) # If not JSON, just clean up extra whitespace
-			return {"response": cleaned_text}
+			response_text = ' '.join(response_str.split())
+
+		return {"response": response_text}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=f"Error with bedrock-runtime ({MODEL_ID}). Reason: {e}")
-
-"""
-{
-	"user1": [
-		{
-			"role": "user",
-			"content": [
-				{"text": "yap yap"}
-			]
-		},
-		{
-			"role": "assistant",
-			"content": [
-				{"text": "yap yap back"}
-			]
-		},
-		{
-			"role": "user",
-			"content": [
-				{"text": "yap yap more yap"}
-			]
-		},
-	]
-}
-"""
