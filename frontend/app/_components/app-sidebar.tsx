@@ -1,4 +1,4 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
+import { Home, Settings, BotMessageSquare, NotebookPen, NotebookText, Scale } from "lucide-react"
 
 import {
   Sidebar,
@@ -6,7 +6,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -16,31 +15,35 @@ import { ModeToggle } from "./mode-toggle"
 import ProfileAvatar from "./profile-avatar"
 import { TypographyH3, TypographyP } from "./typography"
 
-// Menu items.
-const items = [
+export const sidebarItems = [
   {
     title: "Home",
-    url: "#",
+    url: "/home",
     icon: Home,
   },
   {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
+    title: "Journal Entries",
+    url: "/journal-entries",
+    icon: NotebookPen,
   },
   {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
+    title: "General Ledger",
+    url: "/general-ledger",
+    icon: NotebookText,
   },
+  // {
+  //   title: "Trial Balance",
+  //   url: "/trial-balance",
+  //   icon: Scale,
+  // },
   {
-    title: "Search",
-    url: "#",
-    icon: Search,
+    title: "Virtual CFO",
+    url: "/virtual-cfo",
+    icon: BotMessageSquare,
   },
   {
     title: "Settings",
-    url: "#",
+    url: "/settings",
     icon: Settings,
   },
 ]
@@ -52,7 +55,7 @@ export function AppSidebar() {
         <div className="flex gap-2 flex-row items-center w-full">
           <div className="flex gap-2 flex-row items-center w-full">
             <TypographyH3>
-              AI-AMS
+              Centif.AI
             </TypographyH3>
           </div>
           <ModeToggle />
@@ -60,10 +63,9 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {sidebarItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>
