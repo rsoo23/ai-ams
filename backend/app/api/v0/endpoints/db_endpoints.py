@@ -65,7 +65,7 @@ async def get_journal_entries(db: Session = Depends(get_db)):
 				description=entry.description,
 				lines=[
 					JournalEntryLineSchema(
-						account_id=str(line.account_id),
+						account_code=line.account_code,
 						debit=line.debit,
 						credit=line.credit,
 						description=line.description,
@@ -92,7 +92,7 @@ async def submit_journal_entry(journal_entry: JournalEntrySchema, db: Session = 
 			JournalEntryCRUD.add_journal_line(
 				db=db,
 				journal_entry_id=entry.id,
-				account_id=int(line.account_id),
+				account_code=int(line.account_code),
 				debit=line.debit,
 				credit=line.credit,
 				description=line.description

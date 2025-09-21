@@ -30,15 +30,12 @@ class Priority(enum.Enum):
 
 class Account(Base):
     __tablename__ = "accounts"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    code = Column(String(20), unique=True, nullable=False, index=True)
+
+    code = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     type = Column(String(20), nullable=False)  # Asset, Liability, Equity, Revenue, Expense
-    parent_id = Column(Integer, ForeignKey("accounts.id"), nullable=True)
     
     # Relationships
-    parent = relationship("Account", remote_side=[id], backref="children")
     journal_lines = relationship("JournalEntryLine", back_populates="account")
 
 class JournalEntry(Base):
@@ -58,7 +55,7 @@ class JournalEntryLine(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     journal_entry_id = Column(Integer, ForeignKey("journal_entries.id"), nullable=False)
-    account_id = Column(Integer, ForeignKey("accounts.id"), nullable=False)
+    account_id = Column(Integer, ForeignKey("accounts.code"), nullable=False)
     debit = Column(Float, default=0.0)
     credit = Column(Float, default=0.0)
     description = Column(Text, nullable=True)

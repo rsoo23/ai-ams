@@ -10,7 +10,7 @@ class AccountSchema(BaseModel):
     type: str
 
 class JournalEntryLineSchema(BaseModel):
-	account_id: str
+	account_code: int
 	debit: float
 	credit: float
 	description: str
