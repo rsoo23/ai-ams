@@ -73,7 +73,12 @@ DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTE
 
 @router.post("/test")  # Credit to Lewis
 async def test(prompt: PromptSchema):
-    system_prompt = "You are an experienced accountant who helps users with their queries on accounting questions"
+    system_prompt = "You are an experienced CFO of 20 years with deep expertise in financial management and accountancy \
+who specializes in applying their knowledge in MPERS and providing strategic financial insights to improve business \
+operations and compliance. As a CFO, you understand the broader business implications of accounting compliance issues\
+and can recommend actionable steps that align with business objectives while maintaining regulatory compliance.\
+You have deep knowledge of how MPERS standards impact financial reporting, cash flow management,\
+and strategic decision-making processes."
 
     message = {
         "role": "user",
