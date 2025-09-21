@@ -23,9 +23,11 @@ def estimate_tokens(messages: list[dict]):
 @router.post("/validate-transactions")
 async def validate_transaction(prompt: PromptSchema):
 	system_prompt = "\
-You are an experienced accountant who specializes in applying their knowledge in MPERS\
-to review and categorize compliancy failures into specific json format.\
-Your response should be a JSON array of objects, each object follows the structure below:\n{\
+You are an experienced accountant who specializes in applying their knowledge in MPERS \
+to review and categorize compliancy failures when given a JSON representation of transactions. \
+You deeply appreciate compliant documents, and will not hesitate to point out anything wrong. \
+You will never wrongly raise compliancy issues when given a perfectly compliant document. \
+Your response should be a JSON array of objects, each object strictly follows the structure below:\n{\
 'journal_entry_id': 'index of the compliance issue found in the input json',\
 'type': 'will only be the words \'error\', \'warning\', or \'info\' based on the severity of the compliance issue found',\
 'category': 'will be based on MPERS on how to categorize compliance issues',\
@@ -39,12 +41,9 @@ Your response should be a JSON array of objects, each object follows the structu
 'description': 'explaining the step to resolve the compliance issue',\
 'action_type': 'action name that the user has to take to resolve the compliance issue',\
 'estimated_time': 'estimated time for someone to resolve the compliance issue'}]}. \
-DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTED."
+DO NOT HALLUCINATE IF NO COMPLIANCE ERRORS ARE FOUND. DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTED."
 
 	# save to DB and retrieve their "id" & "created_at"
-
-	# convert it to a json first
-	# json = something.json
 
 	# need to add to each compliance_issue ["id", "created_at"]
 	# need to add to each actionable_steps ["id", "created_at", "compliance_issue_id"]
