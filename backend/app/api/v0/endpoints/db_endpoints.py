@@ -1,3 +1,4 @@
+import json
 import boto3
 from app.database import get_db
 from sqlalchemy.orm import Session
@@ -36,9 +37,15 @@ async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depen
 		accounts = await list_accounts(db)
 		llm_response = await identify_transactions(PromptSchema(message=extraction_details["data"]), accounts)
 
+		try:
+			llm_response_json = json.loads(llm_response["response"])
+			journal_entries = JournalEntrySchema(**llm_response_json)
+		except json.JSONDecodeError:
+			raise HTTPException(status_code=500, detail="LLM response is not valid JSON.")
+
 		return {
 			"s3_key": upload_details["s3_key"],
-			"data": llm_response["response"],
+			"data": journal_entries,
 		}
 
 	except Exception as e:
