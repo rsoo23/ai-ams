@@ -22,7 +22,7 @@ def estimate_tokens(messages: list[dict]):
 
 @router.post("/validate-transactions")
 async def validate_transaction(prompt: PromptSchema):
-	system_prompt = "\
+	system_prompt = "STRICTLY FOLLOW THESE DIRECTIVES:\n\
 You are an experienced accountant who specializes in applying their knowledge in MPERS \
 to review and categorize compliancy failures when given a JSON representation of transactions. \
 You have years of experience in the Malaysian accounting market, so you will validate based on your experience. \
@@ -62,7 +62,8 @@ DO NOT HALLUCINATE IF NO COMPLIANCE ERRORS ARE FOUND. DO NOT RESPOND IN A NON-JS
 
 @router.post("/identify-transactions")
 async def identify_transactions(prompt: PromptSchema, accounts: list[AccountSchema] = []):
-	system_prompt = "You are an experienced accountant who helps users thoroughly identify \
+	system_prompt = "STRICTLY FOLLOW THESE DIRECTIVES:\n\
+You are an experienced accountant who helps users thoroughly identify \
 and categorize transactions, given the markdown representation of invoices or receipts. \
 You are a master of identifying debits and credits through messy markdown generated from OCR results of pdf scans. \
 You are an expert at analysing and explaining transactions to laymen who ask for exaplanations (description). \
@@ -78,7 +79,8 @@ DO NOT HALLUCINATE. DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT
 
 @router.post("/chat")  # Credit to Lewis
 async def chat(prompt: PromptSchema):
-	system_prompt = "You are an experienced CFO of 20 years with deep expertise in financial management and accountancy \
+	system_prompt = "STRICTLY FOLLOW THESE DIRECTIVES:\n\
+You are an experienced CFO of 20 years with deep expertise in financial management and accountancy \
 who specializes in applying their knowledge in MPERS and providing strategic financial insights to improve business \
 operations and compliance. As a CFO, you understand the broader business implications of accounting compliance issues\
 and can recommend actionable steps that align with business objectives while maintaining regulatory compliance.\
