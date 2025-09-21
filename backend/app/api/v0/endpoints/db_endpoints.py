@@ -1,6 +1,7 @@
 import json
 import boto3
 from app.database import get_db
+from app.models.models import JournalEntry
 from sqlalchemy.orm import Session, joinedload
 from fastapi.responses import StreamingResponse
 from .bedrock_endpoints import identify_transactions
@@ -57,7 +58,7 @@ async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depen
 @router.get("/journal-entry")
 async def get_journal_entries(db: Session = Depends(get_db)):
 	try:
-		entries = db.query(JournalEntryCRUD).options(joinedload(JournalEntryCRUD.lines)).all()
+		entries = db.query(JournalEntry).options(joinedload(JournalEntry.lines)).all()
 		return [
 			JournalEntrySchema(
 				date=entry.date.isoformat(),
