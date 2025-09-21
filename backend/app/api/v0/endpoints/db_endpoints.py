@@ -81,24 +81,24 @@ async def get_journal_entries(db: Session = Depends(get_db)):
 @router.post("/journal-entry")
 async def submit_journal_entry(journal_entry: JournalEntrySchema, db: Session = Depends(get_db)):
 	try:
-		entry = JournalEntryCRUD.create_journal_entry(
-			db=db,
-			date=journal_entry.date,
-			reference=journal_entry.reference,
-			description=journal_entry.description
-		)
-
-		for line in journal_entry.lines:
-			JournalEntryCRUD.add_journal_line(
+		with db.begin():
+			entry = JournalEntryCRUD.create_journal_entry(
 				db=db,
-				journal_entry_id=entry.id,
-				account_code=int(line.account_code),
-				debit=line.debit,
-				credit=line.credit,
-				description=line.description
+				date=journal_entry.date,
+				reference=journal_entry.reference,
+				description=journal_entry.description
 			)
-		
-		db.refresh()
+
+			for line in journal_entry.lines:
+				JournalEntryCRUD.add_journal_line(
+					db=db,
+					journal_entry_id=entry.id,
+					account_code=int(line.account_code),
+					debit=line.debit,
+					credit=line.credit,
+					description=line.description
+				)
+		db.refresh(entry)
 		return {"status": "success"}
 	except Exception as e:
 		db.rollback()

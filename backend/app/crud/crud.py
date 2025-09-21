@@ -24,8 +24,7 @@ class JournalEntryCRUD:
     def create_journal_entry(db: Session, date, reference: str = None, description: str = None):
         entry = JournalEntry(date=date, reference=reference, description=description)
         db.add(entry)
-        db.commit()
-        db.refresh(entry)
+        db.flush()
         return entry
     
     @staticmethod
@@ -39,6 +38,5 @@ class JournalEntryCRUD:
             description=description
         )
         db.add(line)
-        db.commit()
-        db.refresh(line)
+        db.flush()
         return line
