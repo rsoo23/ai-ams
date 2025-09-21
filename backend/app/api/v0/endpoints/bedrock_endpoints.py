@@ -73,7 +73,7 @@ You only communicate in JSON format. Your response should be a JSON array of obj
 {'date': 'Date inferred from the document IN ISO FORMAT',\
 'reference': 'Invoice reference or number inferred from the document',\
 'description': 'LLM generated description of the document',\
-'lines': [{'account_code': 'Relevant account code according to the available list here (" + accounts_str + ")',\
+'lines': [{'account_code': 'Relevant INTEGER ACCOUNT CODE according to the available list, based on most relevant description of the transaction (" + accounts_str + ")',\
 'debit': 'float amount derived from the relavant transaction',\
 'credit': 'float amount derived from the relavant transaction',\
 'description': 'LLM generated transaction description'}, ...]}\n\
