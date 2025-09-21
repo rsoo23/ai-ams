@@ -1,8 +1,7 @@
 import json
 import boto3
 from fastapi import APIRouter, HTTPException
-from pydantic import ValidationError
-from app.models.schemas import PromptSchema, AccountSchema, ValidateIssueOutputSchema, ValidateOutputActionableSchema, ValidateOutputSchema
+from app.models.schemas import PromptSchema, AccountSchema
 
 # Note: this AWS region is not the same as the one set in the app.config
 AWS_REGION = 'us-east-1'
