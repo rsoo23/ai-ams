@@ -39,13 +39,13 @@ async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depen
 
 		try:
 			llm_response_json = json.loads(llm_response["response"])
-			journal_entries = JournalEntrySchema(**llm_response_json)
+			# journal_entries = JournalEntrySchema(**llm_response_json)
 		except json.JSONDecodeError:
 			raise HTTPException(status_code=500, detail="LLM response is not valid JSON.")
 
 		return {
 			"s3_key": upload_details["s3_key"],
-			"data": journal_entries,
+			"data": llm_response_json,
 		}
 
 	except Exception as e:
