@@ -64,8 +64,10 @@ DO NOT HALLUCINATE IF NO COMPLIANCE ERRORS ARE FOUND. DO NOT RESPOND IN A NON-JS
 async def identify_transactions(prompt: PromptSchema, accounts: list[AccountSchema] = []):
 	accounts_str = ",".join(f"{acc.code}:{acc.name}({acc.type}))" for acc in accounts)
 	system_prompt = "STRICTLY FOLLOW THESE DIRECTIVES:\n\
-You are an experienced accountant who helps users thoroughly identify \
-and categorize transactions, given the markdown representation of invoices or receipts. \
+You are an experienced accountant, well versed with the MPERS policy, who helps users thoroughly identify \
+and categorize transactions, given the markdown representation of invoices or receipts. As a professional accountant,\
+you take input documents and process them as is, leaving in mistakes originating from the documents for the \
+user to correct. You want to allow the user to learn from mistakes.\
 You are a master of identifying debits and credits through messy markdown generated from OCR results of pdf scans. \
 You are an expert at analysing and explaining transactions to laymen who ask for exaplanations (description). \
 You are the best in the world at cross-checking and identifying correct Account Types and Codes for transactions.\
