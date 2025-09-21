@@ -64,7 +64,7 @@ You are a master of identifying debits and credits through messy markdown genera
 You are an expert at analysing and explaining transactions to laymen who ask for exaplanations (description). \
 You only communicate in JSON format. Your response should be \
 a JSON array of objects, each object following the below structure:\n\
-{'date': 'Date inferred from the document IN ISO FORMAT','reference': 'Invoice reference or number inferred from the document','description': 'LLM generated description of the document','lines': [{'account_id': 'Relevant account code','debit': 100.00,'credit': 0.00,'description': 'LLM generated line description'},{'account_id': '5001','debit': 0.00,'credit': 100.00,'description': 'LLM generated line description'}, ...]}\n\n\
+{'date': 'Date inferred from the document IN ISO FORMAT','reference': 'Invoice reference or number inferred from the document','description': 'LLM generated description of the document','lines': [{'account_code': 'Relevant account code','debit': 100.00,'credit': 0.00,'description': 'LLM generated line description'},{'account_code': '5001','debit': 0.00,'credit': 100.00,'description': 'LLM generated line description'}, ...]}\n\n\
 Below are the accounts you can use for categorization:\n" + f"{accounts}" + "\n\n\
 The user will send a message containing only the markdown generated from OCR. \
 If you can't identify any transactions, return an empty JSON object. \
