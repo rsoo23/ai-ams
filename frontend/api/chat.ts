@@ -1,7 +1,7 @@
 
 export function prompt(message: string) {
 
-  return fetch(`${process.env.NEXT_PUBLIC_API_URL}/v0/bedrock/test`, {
+  return fetch(`${process.env.NEXT_PUBLIC_API_URL}/v0/bedrock/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -1,21 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { uploadFile, streamPDF } from "@/api/upload-file";
 import ExtractedResultCard from "./_components/extracted-result-card";
-import UploadCard from "./_components/upload-card";
+import UploadCard, { UploadCardRef } from "./_components/upload-card";
 
 interface UploadResponse {
   s3_key: string;
-  data: string;
+  data: any; // Journal entry data
+  validation?: any[]; // Validation/compliance issues
 }
 
 export default function UploadPage() {
   const [uploadResponse, setUploadResponse] = useState<UploadResponse | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [s3Key, setS3Key] = useState<string | null>(null);
+  const uploadCardRef = useRef<UploadCardRef>(null);
 
   const { mutate, isPending } = useMutation({
     mutationFn: uploadFile,
@@ -23,6 +25,8 @@ export default function UploadPage() {
       toast.success("Document uploaded and processed successfully!");
       setUploadResponse(data);
       setS3Key(data.s3_key);
+      // Clear the uploaded file after successful upload
+      uploadCardRef.current?.clearFile();
     },
     onError: (error: any) => {
       toast.error(error.message || "Upload failed");
@@ -51,6 +55,7 @@ export default function UploadPage() {
   return (
     <div className="w-full flex flex-col items-center gap-4">
       <UploadCard 
+        ref={uploadCardRef}
         mutate={mutate} 
         isPending={isPending} 
         pdfUrl={pdfUrl}

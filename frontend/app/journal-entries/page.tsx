@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JournalEntryCard, NewEntryModal, EmptyState } from "./_components";
+import { getJournalEntries } from "@/api/journal-entries";
 
 export interface JournalEntryLine {
   id: number;
@@ -23,126 +25,55 @@ export interface JournalEntry {
   lines: JournalEntryLine[];
 }
 
-// Dummy data
-const dummyJournalEntries: JournalEntry[] = [
-  {
-    id: 1,
-    date: new Date('2024-01-15'),
-    reference: 'JE-001',
-    description: 'Office rent payment',
-    created_at: new Date('2024-01-15T10:30:00'),
-    lines: [
-      {
-        id: 1,
-        account_id: 5001,
-        account_name: 'Rent Expense',
-        debit: 2500.00,
-        credit: 0.00,
-        description: 'Monthly office rent'
-      },
-      {
-        id: 2,
-        account_id: 1001,
-        account_name: 'Cash',
-        debit: 0.00,
-        credit: 2500.00,
-        description: 'Payment for rent'
-      }
-    ]
-  },
-  {
-    id: 2,
-    date: new Date('2024-01-16'),
-    reference: 'JE-002',
-    description: 'Equipment purchase',
-    created_at: new Date('2024-01-16T14:45:00'),
-    lines: [
-      {
-        id: 3,
-        account_id: 1500,
-        account_name: 'Equipment',
-        debit: 5000.00,
-        credit: 0.00,
-        description: 'New laptop and printer'
-      },
-      {
-        id: 4,
-        account_id: 2001,
-        account_name: 'Accounts Payable',
-        debit: 0.00,
-        credit: 5000.00,
-        description: 'Amount owed to supplier'
-      }
-    ]
-  },
-  {
-    id: 3,
-    date: new Date('2024-01-17'),
-    reference: 'JE-003',
-    description: 'Sales revenue',
-    created_at: new Date('2024-01-17T16:20:00'),
-    lines: [
-      {
-        id: 5,
-        account_id: 1001,
-        account_name: 'Cash',
-        debit: 7500.00,
-        credit: 0.00,
-        description: 'Cash received from sales'
-      },
-      {
-        id: 6,
-        account_id: 4001,
-        account_name: 'Sales Revenue',
-        debit: 0.00,
-        credit: 7500.00,
-        description: 'Revenue from product sales'
-      }
-    ]
-  },
-  {
-    id: 4,
-    date: new Date('2024-01-18'),
-    reference: 'JE-004',
-    description: 'Utility bill payment',
-    created_at: new Date('2024-01-18T11:15:00'),
-    lines: [
-      {
-        id: 7,
-        account_id: 5002,
-        account_name: 'Utilities Expense',
-        debit: 450.00,
-        credit: 0.00,
-        description: 'Electricity and water bill'
-      },
-      {
-        id: 8,
-        account_id: 1001,
-        account_name: 'Cash',
-        debit: 0.00,
-        credit: 450.00,
-        description: 'Payment for utilities'
-      }
-    ]
-  }
-];
-
 export default function JournalEntryPage() {
-  const [entries, setEntries] = useState<JournalEntry[]>(dummyJournalEntries);
   const [isNewEntryModalOpen, setIsNewEntryModalOpen] = useState(false);
+
+  // Fetch journal entries from API
+  const { data: apiEntries, isLoading, error, refetch } = useQuery({
+    queryKey: ['journal-entries'],
+    queryFn: getJournalEntries,
+  });
+
+  // Transform API data to match our interface and convert entries state to local state for manipulation
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+
+  // Update local state when API data changes
+  React.useEffect(() => {
+    if (apiEntries) {
+      // Transform the API response to match our JournalEntry interface
+      const transformedEntries: JournalEntry[] = apiEntries.map((entry: any) => ({
+        id: entry.id,
+        date: new Date(entry.date),
+        reference: entry.reference,
+        description: entry.description,
+        created_at: new Date(entry.created_at || entry.date),
+        lines: entry.lines.map((line: any, index: number) => ({
+          id: line.id || index + 1,
+          account_id: line.account_code || line.account_id,
+          account_name: line.account_name || `Account ${line.account_code || line.account_id}`,
+          debit: parseFloat(line.debit) || 0,
+          credit: parseFloat(line.credit) || 0,
+          description: line.description || ''
+        }))
+      }));
+      setEntries(transformedEntries);
+    }
+  }, [apiEntries]);
 
   const handleDeleteEntry = (entryId: number) => {
     setEntries(entries.filter(entry => entry.id !== entryId));
+    // TODO: Add API call to delete entry from backend
   };
 
   const handleSaveEntry = (entryId: number, updatedEntry: JournalEntry) => {
     setEntries(entries.map(entry => 
       entry.id === entryId ? updatedEntry : entry
     ));
+    // TODO: Add API call to update entry in backend
   };
 
   const handleCreateNewEntry = (newEntry: JournalEntry) => {
-    const newId = Math.max(...entries.map(e => e.id)) + 1;
+    const newId = Math.max(...entries.map(e => e.id), 0) + 1;
     const entryWithId = {
       ...newEntry,
       id: newId,
@@ -152,6 +83,8 @@ export default function JournalEntryPage() {
       }))
     };
     setEntries([entryWithId, ...entries]);
+    // TODO: Add API call to save new entry to backend
+    // After successful save, refetch data: refetch();
   };
 
   const handleCreateManually = () => {
@@ -174,12 +107,28 @@ export default function JournalEntryPage() {
       {/* Scrollable Content */}
       <div className="flex-1 overflow-auto">
         <div className="grid gap-6 pb-6">
-          {entries.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading journal entries...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <p className="text-destructive mb-4">Failed to load journal entries</p>
+                <Button onClick={() => refetch()} variant="outline">
+                  Try Again
+                </Button>
+              </div>
+            </div>
+          ) : entries.length === 0 ? (
             <EmptyState onCreateManually={handleCreateManually} />
           ) : (
-            entries.map((entry) => (
+            entries.map((entry, index) => (
               <JournalEntryCard
-                key={entry.id}
+                key={`entry-${entry.id}-${index}`}
                 entry={entry}
                 onSave={handleSaveEntry}
                 onDelete={handleDeleteEntry}

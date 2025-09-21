@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, forwardRef, useImperativeHandle } from "react";
 import { useDropzone } from "react-dropzone";
 import {
   Card,
@@ -22,7 +22,11 @@ interface UploadCardProps {
   setPdfUrl: (url: string | null) => void;
 }
 
-export default function UploadCard({ mutate, isPending, pdfUrl, setPdfUrl }: UploadCardProps) {
+export interface UploadCardRef {
+  clearFile: () => void;
+}
+
+const UploadCard = forwardRef<UploadCardRef, UploadCardProps>(({ mutate, isPending, pdfUrl, setPdfUrl }, ref) => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
 
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
@@ -50,6 +54,10 @@ export default function UploadCard({ mutate, isPending, pdfUrl, setPdfUrl }: Upl
     setPdfUrl(null);
     setPdfFile(null);
   };
+
+  useImperativeHandle(ref, () => ({
+    clearFile: handleClear
+  }));
 
   const handleUpload = () => {
     if (pdfFile) {
@@ -92,4 +100,8 @@ export default function UploadCard({ mutate, isPending, pdfUrl, setPdfUrl }: Upl
         </CardFooter>
     </Card>
   );
-}
+});
+
+UploadCard.displayName = "UploadCard";
+
+export default UploadCard;

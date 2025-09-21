@@ -16,20 +16,8 @@ export function uploadFile(file: File) {
   });
 }
 
-export function getPDF(s3Key: string) {
-  return fetch(`${process.env.NEXT_PUBLIC_API_URL}/v0/db/s3`, {
-    method: "GET",
-  }).then(async (res) => {
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Upload failed: ${res.status} - ${errorText}`);
-    }
-    return res.json();
-  });
-}
-
 export async function streamPDF(s3Key: string, onProgress?: (progress: number) => void) {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v0/db/s3/${s3Key}`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v0/db/s3?s3_key=${s3Key}`, {
     method: "GET",
     headers: {
       'Accept': 'application/pdf',
