@@ -1,7 +1,8 @@
 import json
 import boto3
 from fastapi import APIRouter, HTTPException
-from app.models.schemas import PromptSchema, AccountSchema
+from pydantic import ValidationError
+from app.models.schemas import PromptSchema, AccountSchema, ValidateIssueOutputSchema, ValidateOutputActionableSchema, ValidateOutputSchema
 
 # Note: this AWS region is not the same as the one set in the app.config
 AWS_REGION = 'us-east-1'
@@ -43,7 +44,7 @@ DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTE
 
     # will have to add the id myself into the return prompt
     response = await send_prompt(system_prompt, prompt.message, 0.5, 0.9)
-    
+
     # save to DB and retrieve their "id" & "created_at"
 
     # convert it to a json first
@@ -61,7 +62,12 @@ DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTE
             json[i]["actionable_steps"][j.id]["created_at"] = j.created_at
     """
 
-    return response
+    try:
+        response["response"] = json.loads(response["response"])
+        return ValidateOutputSchema.model_validate(response)
+    except ValidationError as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="LLM response is not a valid JSON")
 
 @router.post("/identify-transactions")
 async def identify_transactions(prompt: PromptSchema, accounts: list[AccountSchema] = []):

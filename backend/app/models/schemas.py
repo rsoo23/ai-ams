@@ -20,3 +20,28 @@ class JournalEntrySchema(BaseModel):
 	reference: str
 	description: str
 	lines: list[JournalEntryLineSchema]
+
+class ValidateOutputActionableSchema(BaseModel):
+    # id: str
+    # compliance_issue: str
+    title: str
+    description: str
+    action_type: str
+    estimated_time: str
+    # created_at: str
+
+class ValidateIssueOutputSchema(BaseModel):
+    # id: str
+    journal_entry_id: str
+    type: str
+    category: str
+    title: str
+    description: str
+    field: str
+    value: str
+    expected: str
+    actionable_steps: list[ValidateOutputActionableSchema]
+    # created_at: str
+
+class ValidateOutputSchema(BaseModel):
+    response: list[ValidateIssueOutputSchema]
