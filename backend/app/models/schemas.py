@@ -42,6 +42,3 @@ class ValidateIssueOutputSchema(BaseModel):
     expected: str
     actionable_steps: list[ValidateOutputActionableSchema]
     # created_at: str
-
-class ValidateOutputSchema(BaseModel):
-    response: list[ValidateIssueOutputSchema]

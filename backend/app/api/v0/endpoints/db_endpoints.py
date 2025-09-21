@@ -9,7 +9,7 @@ from app.crud.crud import AccountCRUD, JournalEntryCRUD
 from app.utils import validate_user_id, validate_filename
 from fastapi import APIRouter, UploadFile, HTTPException, Depends
 from .bedrock_endpoints import identify_transactions, validate_transaction
-from app.models.schemas import AccountSchema, PromptSchema, JournalEntrySchema, JournalEntryLineSchema, ValidateOutputSchema
+from app.models.schemas import AccountSchema, PromptSchema, JournalEntrySchema, JournalEntryLineSchema
 from app.config import AWS_REGION, S3_BUCKET_NAME
 
 FILE_SIZE_LIMIT = 10 * 1024 * 1024  # 10MB
@@ -44,18 +44,16 @@ async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depen
 		except json.JSONDecodeError:
 			raise HTTPException(status_code=500, detail="LLM response for Journal Entry is not valid JSON.")
 
-		validation = await validate_transaction(PromptSchema(message=llm_response["response"]))
+		llm_validation_response = await validate_transaction(PromptSchema(message=llm_response["response"]))
 		try:
-			validation_json = json.loads(llm_response["response"])
-			validation = ValidateOutputSchema(**validation_json[0])
+			validation_json = json.loads(llm_validation_response["response"])
 		except json.JSONDecodeError:
 			raise HTTPException(status_code=500, detail="LLM response for Validation is not valid JSON.")
-
 
 		return {
 			"s3_key": upload_details["s3_key"],
 			"data": journal_entries,
-			"validation": validation
+			"validation": validation_json
 		}
 
 	except Exception as e:
