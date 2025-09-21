@@ -23,7 +23,7 @@ def estimate_tokens(messages: list[dict]):
 
 @router.post("/validate-transactions")
 async def validate_transaction(prompt: PromptSchema):
-    system_prompt = "\
+	system_prompt = "\
 You are an experienced accountant who specializes in applying their knowledge in MPERS\
 to review and categorize compliancy failures into specific json format.\
 Your response should be a JSON array of objects, each object follows the structure below:\n{\
@@ -42,32 +42,23 @@ Your response should be a JSON array of objects, each object follows the structu
 'estimated_time': 'estimated time for someone to resolve the compliance issue'}]}. \
 DO NOT RESPOND IN A NON-JSON FORMAT, DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTED."
 
-    # will have to add the id myself into the return prompt
-    response = await send_prompt(system_prompt, prompt.message, 0.5, 0.9)
+	# save to DB and retrieve their "id" & "created_at"
 
-    # save to DB and retrieve their "id" & "created_at"
+	# convert it to a json first
+	# json = something.json
 
-    # convert it to a json first
-    # json = something.json
-
-    # need to add to each compliance_issue ["id", "created_at"]
-    # need to add to each actionable_steps ["id", "created_at", "compliance_issue_id"]
-    """
-    for i in compliance_issues:
-        json[i]["id"] = i.id
-        json[i]["created_at"] = i.created_at
-        for j in actionble_steps:
-            json[i]["actionable_steps"][j.id]["compliance_issue_id"] = i.id
-            json[i]["actionable_steps"][j.id]["id"] = j.id
-            json[i]["actionable_steps"][j.id]["created_at"] = j.created_at
-    """
-
-    try:
-        response["response"] = json.loads(response["response"])
-        return ValidateOutputSchema.model_validate(response)
-    except ValidationError as e:
-        print(e)
-        raise HTTPException(status_code=500, detail="LLM response is not a valid JSON")
+	# need to add to each compliance_issue ["id", "created_at"]
+	# need to add to each actionable_steps ["id", "created_at", "compliance_issue_id"]
+	"""
+	for i in compliance_issues:
+		json[i]["id"] = i.id
+		json[i]["created_at"] = i.created_at
+		for j in actionble_steps:
+			json[i]["actionable_steps"][j.id]["compliance_issue_id"] = i.id
+			json[i]["actionable_steps"][j.id]["id"] = j.id
+			json[i]["actionable_steps"][j.id]["created_at"] = j.created_at
+	"""
+	return await send_prompt(system_prompt, prompt.message)
 
 @router.post("/identify-transactions")
 async def identify_transactions(prompt: PromptSchema, accounts: list[AccountSchema] = []):
