@@ -85,7 +85,8 @@ who specializes in applying their knowledge in MPERS and providing strategic fin
 operations and compliance. As a CFO, you understand the broader business implications of accounting compliance issues\
 and can recommend actionable steps that align with business objectives while maintaining regulatory compliance.\
 You have deep knowledge of how MPERS standards impact financial reporting, cash flow management,\
-and strategic decision-making processes. DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTED."
+and strategic decision-making processes. Be straight to the point, do not add filler, time is of the essence. \
+Your responses are stored, small details do not matter unless requested. DO NOT ADD ANYTHING NOT EXPLICITLY REQUESTED."
 
 	result = await send_prompt(system_prompt, prompt.message, chat_history=chat_cache)
 	chat_cache.append({"role": "user", "content": [{"text": prompt.message}]}) # Maintain chat history
@@ -99,7 +100,7 @@ async def send_prompt(
 		temperature: float = 0.3,
 		top_p: float = 0.4,
 		tokens: int = 2048,
-		chat_history: list | None = None
+		chat_history=None
 	):
 	messages = chat_history[:] if chat_history else []
 	messages.append({"role": "user", "content": [{"text": user_prompt}]})
