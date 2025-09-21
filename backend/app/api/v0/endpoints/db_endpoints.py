@@ -1,12 +1,12 @@
 import boto3
 from app.database import get_db
 from sqlalchemy.orm import Session
-from app.crud.crud import AccountCRUD
 from fastapi.responses import StreamingResponse
 from .bedrock_endpoints import identify_transactions
 from .textract_endpoints import extract_text_from_pdf
+from app.crud.crud import AccountCRUD, JournalEntryCRUD
 from app.utils import validate_user_id, validate_filename
-from app.models.schemas import AccountSchema, PromptSchema
+from app.models.schemas import AccountSchema, PromptSchema, JournalEntrySchema
 from fastapi import APIRouter, UploadFile, HTTPException, Depends
 from app.config import AWS_REGION, S3_BUCKET_NAME
 
@@ -19,6 +19,9 @@ s3_client = boto3.client('s3', region_name=AWS_REGION)
 async def list_accounts(db: Session = Depends(get_db)):
 	accounts = AccountCRUD.get_accounts(db)
 	return accounts
+
+
+### MAIN FLOW ENDPOINTS ###
 
 @router.post("/upload-and-process")
 async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depends(get_db)):
@@ -40,6 +43,38 @@ async def upload_and_process(user_id: str, file: UploadFile, db: Session = Depen
 
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=f"Error uploading/processing file: {str(e)}")
+
+
+### RDS JOURNAL ENTRY ENDPOINTS ###
+
+@router.post("/journal-entry")
+async def submit_journal_entry(journal_entry: JournalEntrySchema, db: Session = Depends(get_db)):
+	try:
+		entry = JournalEntryCRUD.create_journal_entry(
+			db=db,
+			date=journal_entry.date,
+			reference=journal_entry.reference,
+			description=journal_entry.description
+		)
+
+		for line in journal_entry.lines:
+			JournalEntryCRUD.add_journal_line(
+				db=db,
+				journal_entry_id=entry.id,
+				account_id=int(line.account_id),
+				debit=line.debit,
+				credit=line.credit,
+				description=line.description
+			)
+		
+		db.refresh()
+		return {"status": "success"}
+	except Exception as e:
+		db.rollback()
+		raise HTTPException(status_code=500, detail=f"Error submitting journal entry: {str(e)}")
+
+
+### S3 ENDPOINTS ###
 
 @router.get("/s3")
 async def get_s3_object(s3_key: str):
@@ -95,7 +130,3 @@ async def list_user_files(user_id: str):
 		return {"files": files}
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=f"Error listing files: {str(e)}")
-
-@router.get("/test")  # TEST ENDPOINT
-async def test():
-	return {"data": ["data0", "data1", "data2"]}
